@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <style>
+        /* CSS to set the width and height of the image */
+         .center-heading {
+            text-align: center;
+        }
+          /* Center the empty cart message */
+        .empty-cart-message {
+            text-align: center;
+        }
+        .product-image {
+            width: 100px;
+            height: 100px;
+        }
+
+        /* Center the cart and reduce table size */
+        .center-cart {
+            margin: 0 auto;
+            width: 70%; /* Adjust this value as needed */
+        }
+
+        /* Style the table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .checkout-btn {
+            margin: 20px auto;
+            display: block;
+        }
+         .navbar-brand {
+            font-size: 24px;
+            font-weight: bold;
+            text-decoration: none;
+            color: #333;
+        }
+
+        .cart-icon {
+            font-size: 24px;
+            color: #333;
+            cursor: pointer;
+        }
+        header {
+            background-color: #f2f2f2;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+
+    </style>
+</head>
+  <header>
+        <a class="navbar-brand" href="/">Home</a>
+        <i class="fas fa-shopping-cart cart-icon" id="cart-icon" onclick="goToCart()">Cart</i>
+    </header>
+<body>
+    <h1 class="center-heading">Cart</h1>
+    {% if cart_items %}
+        <div class="center-cart">
+            <table>
+                <tr>
+                    <th>Product</th>
+                    <th>Image</th>
+                    <th>Price</th>
+                    <th>Category</th>
+                    <th>Tags</th>
+                    <th>Quantity</th>
+                    <th>Total</th>
+                    <th>Remove</th>
+                </tr>
+                {% with overall_total=0 %}
+                    {% for cart_item in cart_items %}
+                        <tr>
+                            <td>{{ cart_item.product.name }}</td>
+                            <td><img src="{{ cart_item.product.image.url }}" alt="{{ cart_item.product.name }}" class="product-image"></td>
+                            <td>&#8377; {{ cart_item.product.price }}</td>
+                            <td>{{ cart_item.product.category.name }}</td>
+                            <td>
+                                {% for tag in cart_item.product.tags.all %}
+                                    {{ tag.name }}
+                                    {% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            </td>
+                            <td>
+                                <button class="minus-btn" onclick="decreaseQuantity('{{ cart_item.product.id }}')">-</button>
+                                <input type="number" value="{{ cart_item.quantity }}" min="1" max="{{ cart_item.product.stock }}">
+                                <button class="plus-btn" onclick="increaseQuantity('{{ cart_item.product.id }}')">+</button>
+                            </td>
+            <td><button class="remove-btn" onclick="removeFromCart('{{ cart_item.product.id }}')">Remove</button></td>
+                        </tr>
+                    {% endfor %}
+                    <tr>
+                        <td colspan="7" style="text-align: right;"><strong>Total:</strong></td>
+                        <td>&#8377; {{ overall_total|floatformat:2 }}</td>
+                    </tr>
+                {% endwith %}
+            </table>
+            <button class="checkout-btn">Checkout</button>
+        </div>
+    {% else %}
+  <div class="empty-cart-message">
+            <h3>Your cart is empty.</h3>
+        </div>    {% endif %}
+</body>
+
+<script>
+      function removeFromCart(productId) {
+        fetch(`/cart/remove/${productId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'), // Make sure to include CSRF token for security
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            const cartItemRow = document.getElementById(`cartItem${productId}`);
+            if (cartItemRow) {
+                cartItemRow.remove();
+                window.location.reload(); // Refresh the page
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+    // Function to get the CSRF token from cookies
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+</html>
